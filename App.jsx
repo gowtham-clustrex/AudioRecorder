@@ -23,10 +23,16 @@ import RNFS, {completeHandlerIOS, uploadFiles} from 'react-native-fs';
 import {get_presigned_url, uploadAudio} from './src/Api/ApiCall';
 
 const App = () => {
+  // create a instance of recorder object
   const rec = useRef();
+
+  // setting the pause and resume state
   const [pause, setpause] = useState(false);
+
+  // set the path to the audio to play
   const [path, setPath] = useState('');
 
+  // getting android permissions
   const Permission = async () => {
     if (Platform.OS === 'android') {
       try {
@@ -58,8 +64,10 @@ const App = () => {
     }
   };
 
+  // android folder path
   const folderPath = '/sdcard/AudioRecorder';
 
+  // create folder in android
   const folder = () => {
     console.log(folderPath);
     RNFS.exists(folderPath)
@@ -77,15 +85,14 @@ const App = () => {
   };
 
   useEffect(() => {
-    folder();
     Permission();
+    Platform.OS === 'android' && folder();
     rec.current = new AudioRecorderPlayer();
   }, []);
 
+  // start the recording
   const startListener = async () => {
-    folder();
     rec.current.setSubscriptionDuration(0.08);
-
     const audioSet = {
       AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
       AudioSourceAndroid: AudioSourceAndroidType.MIC,
@@ -93,36 +100,12 @@ const App = () => {
       AVNumberOfChannelsKeyIOS: 2,
       AVFormatIDKeyIOS: AVEncodingOption.aac,
     };
-    const uri = await rec.current.startRecorder(
-      `${folderPath}/new01.aac`,
-      audioSet,
-    );
+    const path =
+      Platform.OS === 'android' ? `${folderPath}/new01.aac` : 'new01.aac';
+    await rec.current.startRecorder(path, audioSet);
     rec.current.addRecordBackListener(r => {
       console.log(r);
     });
-  };
-
-  const uriToBlob = async uri => {
-    try {
-      console.log(uri);
-      const blob1 = await Blob.fromURL(uri);
-      console.log('data', blob1);
-      const response = await axios
-        .get(uri)
-        .then(res => {
-          console.log('test', res);
-        })
-        .catch(re => {
-          console.log('error', re);
-        });
-      console.log('response', response);
-      const blob = await response.blob();
-      console.log('blob', blob);
-      return blob;
-    } catch (error) {
-      console.error('Error converting URI to Blob:', error);
-      return null;
-    }
   };
 
   const stopListener = async () => {
@@ -130,12 +113,18 @@ const App = () => {
     const result = await rec.current.stopRecorder();
     rec.current.removeRecordBackListener();
     if (result) {
-      console.log(result.substring(result.lastIndexOf('/') + 1, result.length));
+      console.log('URL', result);
       name = result.substring(result.lastIndexOf('/') + 1, result.length);
-      // const presigned_url = await fetch(`https://saej74ein0.execute-api.ap-south-1.amazonaws.com/prod/get-s3-url?name=${name}`);
+
+      // getting a presigned url 
       const presigned_url = await get_presigned_url(name);
       const data = await RNFS.readFile(result, 'base64');
+
+      // convert base64 to buffer  
       const bufferAudio = Buffer.from(data, 'base64');
+      console.log(bufferAudio);
+
+      // upload to s3 bucket 
       uploadAudio(presigned_url, bufferAudio).then(re => {
         console.log('Updated');
       });
@@ -145,16 +134,18 @@ const App = () => {
 
   const pauseAudio = async () => {
     console.log('pauseAudio');
-    const result = await rec.current.pauseRecorder();
-    setpause(!pause);
+    rec.current.pauseRecorder().then(() => {
+      setpause(!pause);
+    });
   };
 
   const resumeAudio = async () => {
     console.log('resume');
 
-    const result = await rec.current.resumeRecorder();
+    rec.current.resumeRecorder().then(() => {
+      setpause(!pause);
+    });
     setpause(!pause);
-    setPath(result);
   };
 
   const playAudio = async () => {
