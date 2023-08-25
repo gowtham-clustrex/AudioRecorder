@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   Platform,
   PermissionsAndroid,
+  Blob,
 } from 'react-native';
 import React, {useEffect, useState, useRef} from 'react';
 import tw from 'twrnc';
@@ -14,7 +15,10 @@ import AudioRecorderPlayer, {
   AudioSet,
   AudioSourceAndroidType,
 } from 'react-native-audio-recorder-player';
+import {decode} from 'base64-arraybuffer';
+import axios from 'axios';
 // import RNFetchBlob from 'rn-fetch-blob';
+import {Buffer} from 'buffer';
 import RNFS, {completeHandlerIOS, uploadFiles} from 'react-native-fs';
 import {get_presigned_url, uploadAudio} from './src/Api/ApiCall';
 
@@ -98,6 +102,29 @@ const App = () => {
     });
   };
 
+  const uriToBlob = async uri => {
+    try {
+      console.log(uri);
+      const blob1 = await Blob.fromURL(uri);
+      console.log('data', blob1);
+      const response = await axios
+        .get(uri)
+        .then(res => {
+          console.log('test', res);
+        })
+        .catch(re => {
+          console.log('error', re);
+        });
+      console.log('response', response);
+      const blob = await response.blob();
+      console.log('blob', blob);
+      return blob;
+    } catch (error) {
+      console.error('Error converting URI to Blob:', error);
+      return null;
+    }
+  };
+
   const stopListener = async () => {
     console.log(rec.current);
     const result = await rec.current.stopRecorder();
@@ -105,11 +132,13 @@ const App = () => {
     if (result) {
       console.log(result.substring(result.lastIndexOf('/') + 1, result.length));
       name = result.substring(result.lastIndexOf('/') + 1, result.length);
-      console.log('inte', result);
       // const presigned_url = await fetch(`https://saej74ein0.execute-api.ap-south-1.amazonaws.com/prod/get-s3-url?name=${name}`);
       const presigned_url = await get_presigned_url(name);
       const data = await RNFS.readFile(result, 'base64');
-      console.log(data.length);
+      const bufferAudio = Buffer.from(data, 'base64');
+      uploadAudio(presigned_url, bufferAudio).then(re => {
+        console.log('Updated');
+      });
       setPath(result);
     }
   };

@@ -13,7 +13,7 @@ export const uploadAudio = (url, data) => {
     maxBodyLength: Infinity,
     url: url,
     headers: {
-      'Content-Type': 'audio/x-aac',
+      'Content-Type': 'audio/mpeg',
       // 'Content-Encoding': 'base64',
     },
     data: data,
