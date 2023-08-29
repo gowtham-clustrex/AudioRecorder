@@ -51,6 +51,11 @@ public class MainApplication extends Application implements ReactApplication {
     return mReactNativeHost;
   }
 
+//   @Override   
+//   protected JSIModulePackage getJSIModulePackage() {
+//     return new ReanimatedJSIModulePackage(); // <- add
+// }
+
   @Override
   public void onCreate() {
     super.onCreate();

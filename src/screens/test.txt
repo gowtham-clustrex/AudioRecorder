@@ -1,0 +1,31 @@
+<View>
+            <TouchableOpacity
+              onPress={async () => {
+                (await playerPause) ? pausePlayAudio() : playAudio();
+              }}
+              style={{borderRadius: 40}}>
+              <LinearGradient
+                colors={['#A320D1', '#8B20D2', '#4E20D3', '#A320D1', '#8B20D2']}
+                start={{x: 0.03, y: 0.5}}
+                end={{x: 0.9, y: 0.3}}
+                locations={[0, 0.15, 0.4, 0.7, 1]}
+                style={{borderRadius: 40, padding: 10}}>
+                {!playerPause ? (
+                  <FontAwesomeIcon
+                    icon={faPlay}
+                    style={{color: '#FFf'}}
+                    size={29}
+                  />
+                ) : (
+                  <FontAwesomeIcon
+                    icon={faArrowsRotate}
+                    style={{color: '#fff'}}
+                    size={29}
+                  />
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+            <Text className="text-white my-2 whitespace-pre-wrap w-13 text-center ">
+              {playerPause ? 'Resume' : 'Pause'}
+            </Text>
+          </View>
